@@ -28,15 +28,9 @@ var knex = require('knex')({
         password: '',
         database: 'bd_dsapi'
     }
-});
+}); 
 
-//cadastro de cliente
-//consulta de pedidos
-//relizem e listem seus pedidos
-//adm devem ter recursos como gerenciamento de produtos e pedidos
-//cadastro de cliente
-
-servidor.post('/clientes', (req, res, next) => {
+servidor.post('/clientes', (req, res, next) => { //cadastro de cliente
     const { nome, altura, nascimento, cidade_id } = req.body;
 
     knex('clientes').insert({ //inserindo os dados no banco
@@ -57,3 +51,54 @@ servidor.post('/clientes', (req, res, next) => {
         });
 });
 
+servidor.get('/produtos', (req, res, next) => {//consulta de produtos disponiveis
+    knex("produtos").then((dados) => {
+        if (dados.length === 0) {
+            return res.status(404).json({ error: 'Nenhum produto encontrado' });
+        }
+        res.send(dados)
+    }, next)
+        .catch(error => {
+            console.error(error);
+            res.send(500, { error: 'Erro ao procurar produtos' });
+            return next(error);
+        });
+});
+
+servidor.post('/produtos', (req, res, next) => {//inserir produtos
+    const { nome, preco, quantidade, categoria_id } = req.body;
+
+    knex("produtos").insert({
+        nome,
+        preco,
+        quantidade,
+        categoria_id
+    })
+        .then(([id]) => {
+            res.send(201, { id, nome, preco, quantidade, categoria_id });
+            return next();
+        })
+        .catch(error => {
+            console.error(error);
+            res.send(500, { error: 'Erro ao cadastrar produto' });
+            return next(error);
+        });
+});
+
+servidor.del('/produtos/:idProd', (req, res, next) => { //deletar produtos
+    const id = req.params.idProd
+    knex("produtos")
+        .where("id", id)
+        .delete()
+        .then((dados) => {
+            if (!dados) {
+                return res.status(404).json({ error: 'Nenhum produto encontrado' });
+            }
+            res.send(201, ("Produto excluido com sucesso"));
+        }, next)
+        .catch(error => {
+            console.error(error);
+            res.send(500, { error: 'Erro ao excluir produto' });
+            return next(error);
+        })
+});
