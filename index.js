@@ -28,7 +28,18 @@ var knex = require('knex')({
         password: '',
         database: 'bd_dsapi'
     }
-}); 
+});
+
+/*
+3) relizar pedidos
+4) listar os pedidos por id
+6) gerenciamento de pedidos (editar, deletar, consultar)
+
+concluidos:
+1) cadastro de cliente // concluido
+2) consulta de produtos // concluido
+5) gerenciamento de produtos (inserir// concluido, editar// concluido, deletar// concluido)
+*/
 
 servidor.post('/clientes', (req, res, next) => { //cadastro de cliente
     const { nome, altura, nascimento, cidade_id } = req.body;
@@ -52,12 +63,13 @@ servidor.post('/clientes', (req, res, next) => { //cadastro de cliente
 });
 
 servidor.get('/produtos', (req, res, next) => {//consulta de produtos disponiveis
-    knex("produtos").then((dados) => {
-        if (dados.length === 0) {
-            return res.status(404).json({ error: 'Nenhum produto encontrado' });
-        }
-        res.send(dados)
-    }, next)
+    knex("produtos")
+        .then((dados) => {
+            if (dados.length === 0) {
+                return res.status(404).json({ error: 'Nenhum produto encontrado' });
+            }
+            res.send(dados)
+        }, next)
         .catch(error => {
             console.error(error);
             res.send(500, { error: 'Erro ao procurar produtos' });
@@ -101,4 +113,43 @@ servidor.del('/produtos/:idProd', (req, res, next) => { //deletar produtos
             res.send(500, { error: 'Erro ao excluir produto' });
             return next(error);
         })
+});
+
+
+servidor.put('/produtos/update/:id', (req, res, next) => { //editar produtos
+    const id = req.params.id; //resgatei o valor do id passado na url
+    knex('produtos')
+        .where('id', id) //filtra os produtos para encontrar o id exato
+        .update(req.body) //Atualiza o produto com os dados que estão sendo enviados no corpo da requisição
+        .then((dados) => {
+            if (!dados) {
+                return res.status(404).json({ error: 'Nenhum produto encontrado' });
+            }
+            res.send(201, ("Produto atualizado com sucesso"))
+        }, next)
+        .catch(error => {
+            console.error(error);
+            res.send(500, { error: 'Erro ao atualizar produto' });
+            return next(error);
+        })
+});
+
+//realizar pedidos
+servidor.post('/pedidos', (req, res, next) => {
+    const { horario, endereco, cliente_id, produtos } = req.body;
+    //preciso inserir os dados na tabela pedidos
+
+    knex('pedidos') //especifiquei a table
+        .insert({
+            horario,
+            endereco,
+            cliente_id
+        })
+        .returning('id') //resgata o id gerado
+        .then(([pedidoIds]) => { //o parametro e o resultado da operacao | pedidoIds = [id]
+            const pedidoId = pedidoIds[0] //guardei o primeiro id do pedido gerado | pedidoId = id
+            if (produtos && produtos.length > 0) //verifica se produtos nao e none e se tem pelo menos 1 elemento
+
+        })
+    //pegar os produtos selecionados, verificar se existem, e inserir na tabela pedidos_prdutos o id do produto, id do pedido, preco e quantidade.  
 });
