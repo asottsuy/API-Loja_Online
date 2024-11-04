@@ -124,7 +124,7 @@ servidor.put('/produtos/update/:id', (req, res, next) => { //editar produtos
         .then((dados) => {
             if (!dados) {
                 return res.status(404).json({ error: 'Nenhum produto encontrado' });
-            }
+            } 
             res.send(201, ("Produto atualizado com sucesso"))
         }, next)
         .catch(error => {
@@ -135,21 +135,39 @@ servidor.put('/produtos/update/:id', (req, res, next) => { //editar produtos
 });
 
 //realizar pedidos
+/*
+Inserir os dados na tabela pedidos
+Verificar se os produtos inseridos existem
+Resgatar o id do pedido recem gerado
+Inserir os produtos selecionados na tabela pedidos_produtos
+Verificar se tem estoque suficiente do produto
+Retornar uma resposta caso bem sucedida ou mal sucedida
+*/
 servidor.post('/pedidos', (req, res, next) => {
     const { horario, endereco, cliente_id, produtos } = req.body;
-    //preciso inserir os dados na tabela pedidos
-
-    knex('pedidos') //especifiquei a table
-        .insert({
+    knex('pedidos')
+        .insert({ //o insert retorna um array com o id gerado
             horario,
             endereco,
             cliente_id
         })
-        .returning('id') //resgata o id gerado
-        .then(([pedidoIds]) => { //o parametro e o resultado da operacao | pedidoIds = [id]
-            const pedidoId = pedidoIds[0] //guardei o primeiro id do pedido gerado | pedidoId = id
-            if (produtos && produtos.length > 0) //verifica se produtos nao e none e se tem pelo menos 1 elemento
-
+        .returning('id')
+        .then(([id]) => {
+            produtos_inseridos = produtos.map(p => ({
+                "pedido_id": id,
+                "produto_id": p.produto_id,
+                "preco": p.preco,
+                "quantidade": p.quantidade
+            }));
+            return knex('pedidos_produtos').insert(produtos_inseridos)
+                .then(() => {
+                    res.send(201, ("Pedido realizado com sucesso!"));
+                    return next();
+                })
         })
-    //pegar os produtos selecionados, verificar se existem, e inserir na tabela pedidos_prdutos o id do produto, id do pedido, preco e quantidade.  
+        .catch(error => {
+            console.error(error);
+            res.send(500, { error: 'Erro ao realizar pedido' });
+            return next(error);
+        })
 });
